@@ -7,9 +7,9 @@ import sys
 def main():
     repos = get_repositories_folder()
     ca_to_val_script = get_valencianization_script()
-    gnome_user = get_gnome_git_user()
+    gnome_username = get_gnome_git_username()
 
-    convert(repos, ca_to_val_script, gnome_user)
+    convert(repos, ca_to_val_script, gnome_username)
 
 
 def get_repositories_folder():
@@ -34,7 +34,12 @@ def _create_if_needed(folder):
 
 
 def get_valencianization_script():
-    script = input('Where is the script (default: ca_to_va.sh)? ')
+    if len(sys.argv) > 2:
+        script = sys.argv[2]
+        print(f'Using {script} as the script to translate')
+    else:
+        script = input('Where is the script (default: ca_to_va.sh)? ')
+
     if os.path.exists(script):
         return script
 
@@ -42,12 +47,17 @@ def get_valencianization_script():
     raise ValueError(message)
 
 
-def get_gnome_git_user():
-    user = input('Which username do you have on GNOME git? ')
-    if user != '':
-        return user
+def get_gnome_git_username():
+    if len(sys.argv) > 3:
+        username = sys.argv[3]
+        print(f'Using {username} as the script to translate')
+    else:
+        username = input('Which username do you have on GNOME git? ')
 
-    raise ValueError('Please provide a user!')
+    if username:
+        return username
+
+    raise ValueError('Please provide a username!')
 
 
 def convert(repos_folder, script, username):
@@ -93,7 +103,7 @@ def _create_repo(repo_folder, repo_name, username):
 
 def _update_repo(repo_folder):
     with change_dir(repo_folder):
-        _run_command(['git fetch', '-p'])
+        _run_command(['git', 'fetch', '-p'])
         _run_command(['git', 'checkout', 'master'])
         _run_command(['git', 'rebase', 'origin/master'])
 
@@ -105,7 +115,7 @@ def _clean_repo(repo_folder):
 
 def _process_branches_input(raw_branches):
     if raw_branches == '':
-        return 'master'
+        return ['master', ]
     return raw_branches.split(',')
 
 
@@ -127,8 +137,11 @@ def _convert_po_file(script):
 
 
 def _check_in_LINGUAS():
-    if 'ca@valencia' not in open('LINGUAS').read():
-        print('ca@valencia missing in LINGUAS')
+    if 'ca@valencia' in open('LINGUAS').read():
+        print('Found ca@valencia in LINGUAS')
+        return
+
+    print('ca@valencia missing in LINGUAS')
 
 
 def _commit_and_push():
